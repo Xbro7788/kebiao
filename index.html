@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>课表</title>
+<link rel="manifest" href="manifest.webmanifest?v=30">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css?v=30">
+</head>
+<body>
+
+<!-- ======== 课表页 ======== -->
+<section id="page-schedule" class="page active">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="week-title" id="weekTitle">第1周 周一</div>
+      <div class="date-title" id="dateTitle">2026/8/31</div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="btnPrevWeek" aria-label="上一周">‹</button>
+      <button class="icon-btn" id="btnNextWeek" aria-label="下一周">›</button>
+      <button class="icon-btn" id="btnAdd" aria-label="添加课程">＋</button>
+      <button class="icon-btn" id="btnToday" aria-label="回到本周">今</button>
+    </div>
+  </header>
+
+  <div class="grid-wrap" id="gridWrap">
+    <div class="grid" id="grid">
+      <!-- JS 渲染 -->
+    </div>
+  </div>
+</section>
+
+<!-- ======== 导入页 ======== -->
+<section id="page-import" class="page">
+  <header class="topbar"><div class="topbar-left"><div class="week-title">添加课程</div></div></header>
+  <div class="import-body">
+    <div class="import-cards">
+      <button class="import-card" id="btnSingleAdd">
+        <div class="ic-ico">✚</div>
+        <div class="ic-name">单个添加</div>
+        <div class="ic-sub">手动填写课程信息</div>
+      </button>
+      <button class="import-card" id="btnBatchAdd">
+        <div class="ic-ico">📋</div>
+        <div class="ic-name">批量添加</div>
+        <div class="ic-sub">粘贴多行文本一键导入</div>
+      </button>
+    </div>
+    <div class="import-tip" id="batchTip">批量添加格式：<br><code>星期 节次 周次 教室 教师 课程名</code><br>例：<code>周一 1-2节 1-8周 笃学B楼205(多) 孙永艳 马克思主义基本原理</code></div>
+    <div class="ocr-progress" id="ocrProgress" hidden>
+      <div class="ocr-bar"><div class="ocr-bar-inner" id="ocrBarInner"></div></div>
+      <div class="ocr-status" id="ocrStatus">准备中…</div>
+    </div>
+    <div id="ocrResult"></div>
+    <div class="import-extra">
+      <button class="btn ghost" id="btnFileImport">上传课表图片/PDF 自动识别（实验性）</button>
+      <input type="file" id="fileInput" accept=".pdf,image/*" hidden>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 设置页 ======== -->
+<section id="page-settings" class="page">
+  <header class="topbar"><div class="topbar-left"><div class="week-title">设置</div></div></header>
+  <div class="settings-body">
+    <div class="set-group">
+      <div class="set-title">学期设置</div>
+      <label class="set-row">学期第一周周一
+        <input type="date" id="setSemesterStart">
+      </label>
+      <label class="set-row">学期总周数
+        <input type="number" id="setTotalWeeks" min="1" max="30" style="width:70px">
+      </label>
+    </div>
+    <div class="set-group">
+      <div class="set-title">作息时间（第 N 节）</div>
+      <div id="periodEditor"></div>
+      <button class="btn ghost" id="btnAddPeriod">＋ 添加一节</button>
+    </div>
+    <div class="set-group">
+      <div class="set-title">显示选项</div>
+      <label class="set-row switch-row">显示「非本周」课程
+        <input type="checkbox" id="setShowNonWeek" checked>
+      </label>
+      <label class="set-row switch-row">高亮今天
+        <input type="checkbox" id="setHighlightToday" checked>
+      </label>
+    </div>
+    <div class="set-group">
+      <div class="set-title">课表管理</div>
+      <label class="set-row">当前课表名
+        <input type="text" id="profileName" style="flex:1;min-width:0" placeholder="课表名称">
+      </label>
+      <div class="set-btns">
+        <button class="btn" id="btnRenameProfile">重命名</button>
+        <button class="btn" id="btnNewProfile">＋ 新建课表</button>
+      </div>
+      <div id="profileList" class="profile-list"></div>
+    </div>
+    <div class="set-group">
+      <div class="set-title">数据</div>
+      <div class="set-btns">
+        <button class="btn primary" id="btnPreset">一键导入预置课表</button>
+        <button class="btn" id="btnExportJson">导出备份(JSON)</button>
+        <button class="btn" id="btnImportJson">导入备份</button>
+        <button class="btn" id="btnExportIcs">导出日历(ICS)</button>
+        <button class="btn danger" id="btnClear">清空课表</button>
+      </div>
+      <input type="file" id="jsonInput" accept=".json" hidden>
+      <div class="set-note" id="courseCount"></div>
+    </div>
+    <div class="set-group">
+      <div class="set-title">关于</div>
+      <div class="set-note">无广告 · 纯本地运行 · 数据仅存在本机浏览器<br>遇到问题可在设置里导出 JSON 备份。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 底部导航 ======== -->
+<nav class="tabbar">
+  <button class="tab active" data-page="schedule"><span class="tab-ico">🗓</span>课表</button>
+  <button class="tab" data-page="import"><span class="tab-ico">📥</span>导入</button>
+  <button class="tab" data-page="settings"><span class="tab-ico">⚙️</span>设置</button>
+</nav>
+
+<!-- ======== 课程详情弹窗 ======== -->
+<div class="mask" id="detailMask" hidden>
+  <div class="sheet" id="detailSheet">
+    <div class="sheet-handle"></div>
+    <div class="detail-colorbar" id="detailColorbar"></div>
+    <h3 class="detail-name" id="detailName"></h3>
+    <div class="detail-info" id="detailInfo"></div>
+    <div class="detail-btns">
+      <button class="btn ghost" id="btnEditCourse">编辑</button>
+      <button class="btn danger" id="btnDeleteCourse">删除</button>
+      <button class="btn" id="btnCloseDetail">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 课程编辑弹窗 ======== -->
+<div class="mask" id="editMask" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="editTitle">添加课程</h3>
+    <div class="form">
+      <label>课程名称 <input type="text" id="fName" placeholder="如：机械设计"></label>
+      <div class="form-row">
+        <label>星期
+          <select id="fDay"><option value="0">周一</option><option value="1">周二</option><option value="2">周三</option><option value="3">周四</option><option value="4">周五</option><option value="5">周六</option><option value="6">周日</option></select>
+        </label>
+        <label>节次
+          <select id="fStart"></select>
+          <select id="fEnd"></select>
+        </label>
+      </div>
+      <label>周次 <input type="text" id="fWeeks" placeholder="如 1-8周 或 1-8周,12-13周"></label>
+      <label>教室 <input type="text" id="fLocation" placeholder="如 笃学A楼204(多)"></label>
+      <label>教师 <input type="text" id="fTeacher" placeholder="选填"></label>
+      <label>备注 <input type="text" id="fNote" placeholder="教学班/考核方式/学时学分 等，选填"></label>
+      <div class="form-btns">
+        <button class="btn ghost" id="btnCancelEdit">取消</button>
+        <button class="btn primary" id="btnSaveCourse">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 批量导入弹窗 ======== -->
+<div class="mask" id="batchMask" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">批量导入课程</div>
+      <button class="sheet-close" id="btnCloseBatch">×</button>
+    </div>
+    <div class="batch-note">每行一条，格式：<br><code>星期 节次 周次 教室 教师 课程名</code></div>
+    <textarea id="batchText" class="batch-textarea" placeholder="每行一条课程&#10;例：周一 1-2节 1-8周 笃学B楼205(多) 孙永艳 马克思主义基本原理&#10;周二 3-4节 1-8周 笃学A楼407(多) 鹿盈盈 汽车构造-1"></textarea>
+    <div class="batch-preview" id="batchPreview"></div>
+    <button class="btn-import-all" id="btnBatchImport" disabled>一键导入（0 条）</button>
+  </div>
+</div>
+
+<!-- ======== Toast ======== -->
+<div class="toast" id="toast"></div>
+
+<script src="lib/tesseract.min.js?v=30"></script>
+<script src="lib/pdf.min.js?v=30"></script>
+<script src="js/parser.js?v=30"></script>
+<script src="js/importer.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
+</body>
+</html>
